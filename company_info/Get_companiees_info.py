@@ -54,6 +54,7 @@ def comp_type(name):
         name['info'] = 'OTHERS'
 
 for company in companies:
+    company['pays'] = 'SENEGAL'
     comp_type(company)
 
     # Clean up phones: always join if it's a list
