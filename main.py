@@ -1,16 +1,13 @@
-# This is a sample Python script.
+import requests
+from bs4 import BeautifulSoup
 
-# Press Shift+F10 to execute it or replace it with your code.
-# Press Double Shift to search everywhere for classes, files, tool windows, actions, and settings.
+url1 = "https://www.business-senegal.com/fre/Entreprises/profilsample/1/annonceur"
+url2 = "/fre/Entreprises/profilsample/1/annonceur"
 
+# url = url_base + url2
 
-def print_hi(name):
-    # Use a breakpoint in the code line below to debug your script.
-    print(f'Hi, {name}')  # Press Ctrl+F8 to toggle the breakpoint.
+response = requests.get(url2)
+soup = BeautifulSoup(response.content, 'html.parser')
 
+print(soup)
 
-# Press the green button in the gutter to run the script.
-if __name__ == '__main__':
-    print_hi('PyCharm')
-
-# See PyCharm help at https://www.jetbrains.com/help/pycharm/

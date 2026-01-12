@@ -1,61 +1,47 @@
-from time import sleep
+import requests
 from bs4 import BeautifulSoup
-from selenium import webdriver
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
+import re
 
-page_number = 21
-count, n_page = 0, 1
-html_pages =[]
-contents = []
-STEPS = ['container_s context-page', # div step 1: class
-         'leadCyclelist2', 'leadCycleCContainer', # ul step 2: id, class
-         'simple', # li(offer box) step 3: class
-         'TitreOffre', # div step 4: class
-         'a' # substeps of step 4
-         'bx-inf' # div step 5: class
-         ]
+def get_business_info(url, data=None):
+    try:
+        print(f"\nScraping: {url}")
+        response = requests.get(url, timeout=10)
+        response.raise_for_status()
 
-print('\nStarting webdriver...')
-url=f'https://www.business-senegal.com/fre/opportunites/index/page:{n_page}'
-driver = webdriver.Chrome(service=Service(ChromeDriverManager().install()))
+        soup = BeautifulSoup(response.content, "lxml")
+        # data = {"link": url}
 
-# Getting the pages to scrap
-for page in range(page_number):
-    n_page += 1
-    driver.get(url)
-    html_page = driver.page_source
+        # Organization name (bold/strong)
+        name_tag = soup.find("b") or soup.find("strong")
+        if name_tag:
+            data["organization"] = name_tag.get_text(strip=True)
 
-    print(f'\nCharging Page number: {page}...')
-    soup_page = BeautifulSoup(html_page, 'lxml')
-    if soup_page and soup_page not in html_pages:
-        html_pages.append(soup_page)
-        print('page successfully charged...\nAwaiting Parsing..')
-        sleep(4)
-    else:
-        print(f'Page number {page} not successfully charged...')
+        # Website: first <a> tag
+        first_link = soup.find("a", href=True)
+        if first_link:
+            data["web_site"] = first_link["href"]
 
-for html_page in html_pages:
-    print('\tParsing Page...')
-    div = html_page.find('div', class_=STEPS[0])
-    if div:
-        print(f'Step 1 successful {len(div)} {STEPS[0]}')
-        ul = div.find_all('ul', class_=STEPS[2], id=STEPS[1])
-        if ul:
-            print(f'\tStep 2 successful: {len(ul)} {STEPS[1]} from {STEPS[0]}')
-        else:
-            print(f'\tFailed to charge {STEPS[1]} from {STEPS[0]}')
+        # Address: first <em> tag
+        address_tag = soup.find("em")
+        if address_tag:
+            data["address"] = address_tag.get_text(strip=True)
 
-        # li = ul.find('li', class_=STEPS[3])
-        # if len(li) > 1:
-        #     pass
+        # Phone numbers: extract digits only
+        phone_numbers = []
+        for text in soup.stripped_strings:
+            if "(221)" in text or "Tel" in text or "Fax" in text:
+                # Extract digits
+                digits = re.findall(r"\d+", text)
+                if digits:
+                    # Format as +221 XXXXXXXX
+                    num = "".join(digits)
+                    if num.startswith("221"):
+                        num = "+221 " + num[3:]
+                    phone_numbers.append(num)
+        data["phones"] = list(set(phone_numbers))  # deduplicate
 
-    else:
-        print('Could not parse page...')
+        return data
 
-def get_tenders(ul):
-    for box in ul.find_all('li'):
-        offer = box.find('div', class_=STEPS[4])
-        if offer:
-            title = offer.get_text(strip=True).strip()
-            link_for_next = offer.find('a')['href']
+    except Exception as e:
+        print(f"Error scraping {url}: {e}")
+        return None
