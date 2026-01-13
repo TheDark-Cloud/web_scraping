@@ -45,3 +45,25 @@ def get_business_info(url, data=None):
     except Exception as e:
         print(f"Error scraping {url}: {e}")
         return None
+
+def normalize_number(num):
+    # Remove spaces/dashes
+    num = re.sub(r'\s+', '', num)
+
+    # If it starts with '22' and is too long, fix it
+    if (num.startswith('2211') or num.startswith('221') or num.startswith('222')) and len(num) > 12:
+        num = '+221' + num[4:]   # drop the extra '2'
+
+    if num.startswith('2221') and len(num) > 12:
+        num = '+221' + num[4:]
+
+    # If it already starts with '+221', keep it
+    elif num.startswith('+221'):
+        num = num
+
+    return num
+
+def normalize_phones_field(field: str) -> str:
+    # Split by comma, clean each number, and rejoin
+    numbers = [normalize_number(n) for n in field.split(",")]
+    return ", ".join(numbers)
