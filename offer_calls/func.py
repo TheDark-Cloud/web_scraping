@@ -11,10 +11,10 @@ def get_business_info(url, data=None):
         soup = BeautifulSoup(response.content, "lxml")
         # data = {"link": url}
 
-        # Organization name (bold/strong)
-        name_tag = soup.find("b") or soup.find("strong")
-        if name_tag:
-            data["organization"] = name_tag.get_text(strip=True)
+        cv_div = soup.find('div', id='CV')
+        if cv_div:
+            if first_a := cv_div.find('a'):
+                data["publisher"] = first_a.get_text(strip=True)
 
         # Website: first <a> tag
         first_link = soup.find("a", href=True)
